@@ -2,6 +2,7 @@
 //This C# program is an interace between the Arduino to the SQL database
 //it sends commands via serial to the Arduino to request the necessary values
 //it then runs an SQL command to enter the data as a new row.
+//TODO: clean up code, add exceptional handling
 
 
 using System;
