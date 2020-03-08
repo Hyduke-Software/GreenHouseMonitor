@@ -4,6 +4,8 @@
 //
 //Connect BMP180 to SCL and SDA ports
 //Connect DHT11 to digital PIN 8
+//todo: add soil moisture sensor
+
 
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
