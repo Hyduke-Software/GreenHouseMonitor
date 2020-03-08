@@ -1,0 +1,113 @@
+//08/03/2020 this version works
+//Uses an Arduino UNO clone, BMP180 and DHT11. Photoresistor to be added
+//the photoresistor is to be replaced by one with a digital output.
+//
+//Connect BMP180 to SCL and SDA ports
+//Connect DHT11 to digital PIN 8
+
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BMP085_U.h>
+#include "dht.h"
+#define dht_apin 8 // Analog Pin sensor is connected to
+dht DHT; //initialise the dht11
+int LDRpin = A1; //pin for the LDR aka Photoresistor
+
+String commands[] = {"sunlight", "temperature", "humidity", "diagnostics", "help"};
+
+String inputString = "";         // a String to hold incoming data
+bool stringComplete = false;  // whether the string is complete
+Adafruit_BMP085_Unified bmp = Adafruit_BMP085_Unified(10085);
+
+void setup() {
+  // initialize serial:
+  Serial.begin(9600);
+   
+  bmp.begin();
+  // reserve 200 bytes for the inputString:
+  inputString.reserve(200);
+
+
+}
+
+void loop() {
+
+  // print the string when a newline arrives:
+  //Serial.println("CONNECTED TO GREENHOUSe ALPHA");
+ if (stringComplete) {
+ inputString = "";
+   stringComplete = false;
+   // displaySensorDetails();
+}
+}
+
+int readSunlight(){
+      Serial.println(analogRead(LDRpin));
+}
+void readTemp(){
+    float temperature;
+    bmp.getTemperature(&temperature);
+    Serial.print(temperature)+"\n";
+}
+
+int dhtTempRead(){
+  DHT.read11(dht_apin);
+
+  return DHT.temperature;
+}
+int dhtHumidityRead(){
+  DHT.read11(dht_apin);
+
+  return DHT.humidity;
+}
+
+void serialEvent() {
+  while (Serial.available()) {
+    // get the new byte:
+    char inChar = (char)Serial.read();
+    // add it to the inputString:
+    inputString += inChar;
+//todo: remove/clean up
+
+if (inputString == "temperature"){
+readTemp();
+}
+if (inputString == "temperature2"){
+Serial.println(dhtTempRead());
+}
+if (inputString == "sunlight"){
+readSunlight();
+    }
+    if (inputString == "humidity"){
+    Serial.println(dhtHumidityRead());
+    }
+            if (inputString =="diagnostics"){
+              displaySensorDetails();
+            }
+                if (inputString =="help"){
+                   for(int i = 0; i<5; i++){
+                Serial.println(commands[i]);
+                   }
+                  
+                }
+    
+    if (inChar == '\n') {
+      stringComplete = true;
+    }
+  }
+}
+void displaySensorDetails(void)
+{
+  sensor_t sensor;
+  bmp.getSensor(&sensor);
+  Serial.println("------------------------------------");
+  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
+  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
+  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
+  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" hPa");
+  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" hPa");
+  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" hPa");  
+  Serial.println("------------------------------------");
+  Serial.println("");
+  delay(500);
+}
