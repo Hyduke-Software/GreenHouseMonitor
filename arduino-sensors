@@ -1,21 +1,22 @@
-//08/03/2020 this version works
-//Uses an Arduino UNO clone, BMP180 and DHT11. Photoresistor to be added
-//the photoresistor is to be replaced by one with a digital output.
-//
-//Connect BMP180 to SCL and SDA ports
-//Connect DHT11 to digital PIN 8
-//todo: add soil moisture sensor
-
-
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP085_U.h>
 #include "dht.h"
 #define dht_apin 8 // Analog Pin sensor is connected to
+#define arduino_dhtpin 10
 dht DHT; //initialise the dht11
-int LDRpin = A1; //pin for the LDR aka Photoresistor
-
-String commands[] = {"sunlight", "temperature", "humidity", "diagnostics", "help"};
+dht ArduinoDHT;
+int LDRpin = A0;
+String commands[] = 
+{"get-primary-temp",
+"get-secondary-temp",
+"get-sunlight",
+"get-primary-humidity",
+"help",
+"diagnostics",
+"get-arduino-temp",
+"get-arduino-humidity"
+};
 
 String inputString = "";         // a String to hold incoming data
 bool stringComplete = false;  // whether the string is complete
@@ -33,23 +34,25 @@ void setup() {
 }
 
 void loop() {
-
-  // print the string when a newline arrives:
-  //Serial.println("CONNECTED TO GREENHOUSe ALPHA");
  if (stringComplete) {
  inputString = "";
    stringComplete = false;
    // displaySensorDetails();
-}
+                    }
 }
 
-int readSunlight(){
-      Serial.println(analogRead(LDRpin));
+int sunlightTest(){
+   for (int i=0; i <20; i++){
+
+          Serial.println(analogRead(LDRpin));
+          delay(500);
+   }
+
 }
 void readTemp(){
     float temperature;
     bmp.getTemperature(&temperature);
-    Serial.print(temperature)+"\n";
+    Serial.println(temperature)+"\n";
 }
 
 int dhtTempRead(){
@@ -57,6 +60,35 @@ int dhtTempRead(){
 
   return DHT.temperature;
 }
+
+int avgTemp(){
+  int avg =0;
+  int reading=0;
+  for (int j=0; j <10; j++){
+  delay(6000);
+  DHT.read11(dht_apin);
+  reading = reading +  DHT.temperature;
+  }
+
+//gets a probably innaccurate 1 minute average  
+  avg = reading/10;
+  return avg;
+}
+
+
+int readArduinoTemp(){
+  ArduinoDHT.read11(dht_apin);
+
+  return ArduinoDHT.temperature;
+}
+
+int readArduinoHumidity(){
+  ArduinoDHT.read11(dht_apin);
+
+  return ArduinoDHT.humidity;
+}
+
+
 int dhtHumidityRead(){
   DHT.read11(dht_apin);
 
@@ -71,27 +103,43 @@ void serialEvent() {
     inputString += inChar;
 //todo: remove/clean up
 
-if (inputString == "temperature"){
+if (inputString == "get-primary-temp"){
 readTemp();
+//reads temp from BMP180 moduule
 }
-if (inputString == "temperature2"){
+if (inputString == "get-secondary-temp"){
 Serial.println(dhtTempRead());
+//reads forom dht11 
 }
-if (inputString == "sunlight"){
-readSunlight();
+if (inputString == "get-sunlight"){
+ Serial.println(analogRead(LDRpin));
     }
-    if (inputString == "humidity"){
+    if (inputString == "get-primary-humidity"){
     Serial.println(dhtHumidityRead());
+    //reads forom dht11 
     }
             if (inputString =="diagnostics"){
               displaySensorDetails();
+              sunlightTest();
             }
                 if (inputString =="help"){
-                   for(int i = 0; i<5; i++){
+                   for(int i = 0; i<7; i++){
                 Serial.println(commands[i]);
                    }
-                  
                 }
+                      if (inputString =="get-arduino-temp"){
+                        Serial.println(readArduinoTemp());
+                        //reads forom dht11 in the Arduino case
+                   }
+                       if (inputString =="get-arduino-humidity"){
+                       Serial.println(readArduinoHumidity());
+                       //reads forom dht11 in the Arduino case
+                   }
+                      if (inputString =="get-average"){
+                       Serial.println(avgTemp());
+                     
+                   }
+                   
     
     if (inChar == '\n') {
       stringComplete = true;
