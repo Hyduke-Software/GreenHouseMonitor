@@ -1,10 +1,3 @@
-//08/03/2020
-//This C# program is an interace between the Arduino to the SQL database
-//it sends commands via serial to the Arduino to request the necessary values
-//it then runs an SQL command to enter the data as a new row.
-//TODO: clean up code, add exceptional handling
-
-
 using System;
 using System.IO.Ports;
 using System.Threading;
@@ -15,115 +8,182 @@ namespace ConsoleApp1
     class Program
     {
         static SerialPort _serialPort;
-        public static float temp = 0;
-        public static float temptwo = 0;
-        public static int humidity = 0;
+
         public static void Main()
         {
-            string inputString = "";
             _serialPort = new SerialPort();
             _serialPort.PortName = "COM3";//Set your board COM
             _serialPort.BaudRate = 9600;
             _serialPort.Open();
             while (true)
             {
-            Console.WriteLine(getTemp());
-            Console.WriteLine(getsecondTemp());
-            Console.WriteLine(getHumidity());
-                Thread.Sleep(1);
-           // Console.ReadLine();
-            writeToDatabase();
+                getValues();
             Thread.Sleep(60000);
          }
-
         }
 
-        public static float getTemp()
+        public static void getValues()
+        {
+            float primaryTemp   = getPrimaryTemp();
+            float secondaryTemp = getsecondTemp();
+           
+            int primaryHumidity = getPrimaryHumidity();
+            float arduinoTemp   = getArduinoTemp();
+            int arduinoHumidty  = getArduinoHumidity();
+            float sunlight      = getSunlight();
+            Console.WriteLine(primaryTemp + secondaryTemp + arduinoTemp + arduinoHumidty + primaryHumidity + sunlight);
+            writeToDatabase(primaryTemp, secondaryTemp, arduinoTemp, arduinoHumidty, primaryHumidity, sunlight);
+        }
+
+        public static float getPrimaryTemp()
         {
             //reads from the bmp180 module
-            string readString = "";
-            for (int i = 0; i < 10; i++){ } //ten tries
-            _serialPort.WriteLine("temperature");
-            Thread.Sleep(500);
+            float value;
+            for (int i = 0; i < 10; i++){ //ten tries
+            _serialPort.WriteLine("get-primary-temp");
+            Thread.Sleep(500); //appears to work, may need amending if sync issues appears
             string a = _serialPort.ReadExisting();
             if (a == "")
             {
-                Console.WriteLine("no data yet");
-            }
+                    Console.WriteLine("get-primay-temp failed, try #" + i);
+                }
             if (a != "")
-            {
+                    {
+                        value = float.Parse(a);
+                        return value;
+                    }
+             }
+            return 100; //returns 100 if failed
 
-                //break;
-                temp = float.Parse(a);
-                return temp;
-            }
-            temp = 100;
-            return temp; //returns 100 if failed
-            //Console.WriteLine("TEMP is " + readString);
         }
 
-        public static int getHumidity()
+        public static float getArduinoTemp()
         {
             //reads from the bmp180 module
-            string readString = "";
-            for (int i = 0; i < 10; i++) { } //ten tries
-            _serialPort.WriteLine("humidity");
-            Thread.Sleep(500);
-            string a = _serialPort.ReadExisting();
-            if (a == "")
-            {
-                Console.WriteLine("no data yet");
+            float value = 0;
+            for (int i = 0; i < 10; i++)
+            { //ten tries
+                _serialPort.WriteLine("get-arduino-temp");
+                Thread.Sleep(500);
+                string a = _serialPort.ReadExisting();
+                if (a == "")
+                {
+                    Console.WriteLine("get-arduino-temp failed, try #" + i);
+                }
+                if (a != "") //if serial read is not empty
+                {
+                    value = float.Parse(a);
+                    return value;
+                }
             }
-            if (a != "")
-            {
+            return 100; //returns 100 if failed TODO: 10/03/20 change to a more industry standard way
+        }
+        public static int getArduinoHumidity()
+        {
+            //reads from the arduino case dht11 module
+            int value = 0;
+            for (int i = 0; i < 10; i++)
+            { //ten tries
+                _serialPort.WriteLine("get-arduino-humidity");
+                Thread.Sleep(500);
+                string a = _serialPort.ReadExisting();
+                if (a == "")
+                {
+                    Console.WriteLine("get-arduino-humidity failed, try #" + i);
+                }
+                if (a != "") //if serial read is not empty
+                {
+                    value = int.Parse(a);
+                    return value;
+                }
+            }
+            return 100; //returns 100 if failed TODO: 10/03/20 change to a more industry standard way
+        }
 
-                //break;
-                humidity = int.Parse(a);
-                return humidity;
+        public static int getPrimaryHumidity()
+        {
+            //reads from the dht11 module
+            int value;
+            for (int i = 0; i < 10; i++)
+            { //ten tries
+                _serialPort.WriteLine("get-primary-humidity");
+                Thread.Sleep(500);
+                string a = _serialPort.ReadExisting();
+                if (a == "")
+                {
+                    Console.WriteLine("get-arduino-humidity failed, try #" + i);
+                }
+                if (a != "")
+                {
+                    value = int.Parse(a);
+                    return value;
+                }
             }
             return 100; //returns 100 if failed
-            //Console.WriteLine("TEMP is " + readString);
         }
 
         public static float getsecondTemp()
         { //reads from the dht11 module
-            string readString = "";
-            for (int i = 0; i < 10; i++) { } //ten tries
-            _serialPort.WriteLine("temperature2");
-            Thread.Sleep(500);
-            string a = _serialPort.ReadExisting();
-            if (a == "")
-            {
-                Console.WriteLine("no data yet");
-            }
-            if (a != "")
-            {
+            float value;
+            for (int i = 0; i < 10; i++)
+            { //ten tries
+                _serialPort.WriteLine("get-secondary-temp");
+                Thread.Sleep(500);
+                string a = _serialPort.ReadExisting();
+                if (a == "")
+                {
+                    Console.WriteLine("get-secondary-temp failed, try #" + i);
+                }
+                if (a != "")
+                {
 
-                //break;
-                temptwo = float.Parse(a);
-                return temptwo;
+                    //break;
+                    value = float.Parse(a);
+                    return value;
+                }
             }
-            temptwo = 100;
-            return temptwo; //returns 100 if failed
-            //Console.WriteLine("TEMP is " + readString);
+            return 100; //returns 100 if failed
+        }
+
+        public static float getSunlight()
+        { //reads from the dht11 module
+            float value;
+            for (int i = 0; i < 10; i++)
+            { //ten tries
+                _serialPort.WriteLine("get-sunlight");
+                Thread.Sleep(500);
+                string a = _serialPort.ReadExisting();
+                if (a == "")
+                {
+                    Console.WriteLine("get-sunlight failed, try #" + i);
+                }
+                if (a != "")
+                {
+
+                    //break;
+                    value = int.Parse(a);
+                    return value;
+                }
+            }
+            return 9999; //returns 9999 if failed
         }
 
 
-        public static void writeToDatabase()
+        public static void writeToDatabase(float primaryTemp, float secondaryTemp, float arduinoTemp, int arduinoHumidity, int primaryHumidity, float sunlight)
+            
         {
             SqlCommand loadNewDataCommand;
             SqlDataAdapter adapter = new SqlDataAdapter();
-            String SQL = "Insert into sensor_readings (sunlight, temperature, humidity, temperaturetwo)";
-            SQL += "VALUES (69,"+temp+","+ humidity+","+temptwo+")";
+            String SQL = "Insert into sensor_readings (sunlight, primarytemp, primaryhumidity, arduinohumidity, secondarytemp, arduinotemp)";
+            SQL += "VALUES ("+sunlight+","+primaryTemp+","+ primaryHumidity +","+ arduinoHumidity + ","+ secondaryTemp + ","+arduinoTemp+")";
 
 
             String connetionString;
             SqlConnection cnn;
-         
             connetionString = @"Server=SERVERNAME;Database=DATABASENAME;User Id=ACCOUNTNAME;Password=PASSWORD;Integrated Security=False";
             Console.WriteLine("attempting connection to DB");
             cnn = new SqlConnection(connetionString);
-           cnn.Open();
+            cnn.Open();
             Console.WriteLine("Connection Open  !");
             //to do add anexception handler
             loadNewDataCommand = new SqlCommand(SQL, cnn);
