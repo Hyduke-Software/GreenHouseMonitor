@@ -1,25 +1,83 @@
 using System;
 using System.IO.Ports;
 using System.Threading;
-using System.Data;
 using System.Data.SqlClient;
 namespace ConsoleApp1
 {
     class Program
     {
+
         static SerialPort _serialPort;
+        public static string[] credentials;
 
         public static void Main()
+
         {
-            _serialPort = new SerialPort();
-            _serialPort.PortName = "COM3";//Set your board COM
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("Hyduke Sensor Reader 2000"); 
+            Console.WriteLine("BaudRate should be set to 9600");
+            Console.ForegroundColor = ConsoleColor.White;
+            credentials = getCreds(); //loads credentials
+
+
+    _serialPort = new SerialPort();
+            listPorts();
+            Console.WriteLine("Enter COMport name");
+            _serialPort.PortName = Console.ReadLine();
             _serialPort.BaudRate = 9600;
-            _serialPort.Open();
-            while (true)
+            try
             {
-                getValues();
-            Thread.Sleep(60000);
-         }
+                _serialPort.Open();
+                while (true)
+                {
+                   getValues();
+
+//                    writeToDatabase(credentials, 69, 69, 60, 25, 26, 420); //test values if needed 12/05/20
+                    Thread.Sleep(3600000);
+                }
+            }
+            catch (System.IO.IOException)
+            {
+                Console.WriteLine("Error 1: COM port not found, check Device Manager");
+                Main();
+
+
+            }
+
+        }
+
+        public static string[] getCreds()
+        {
+            ///ideally this would be a service account running the exe which would use AD authentication
+               string[] credential;
+            credential = new string[3] {"","",""};
+    //
+            Console.WriteLine("Enter server name");
+            credential[0] = Console.ReadLine();   //server
+            Console.WriteLine("Enter user name");
+            credential[1] = Console.ReadLine();   //username
+            Console.WriteLine("Enter password");
+            credential[2] = Console.ReadLine();   //password
+
+            return credential;
+
+        }
+
+        public static void listPorts()
+       
+            {
+
+                // Get a list of serial port names.
+                string[] ports = SerialPort.GetPortNames();
+
+                Console.WriteLine("The following serial ports were found:");
+
+                // Display each port name to the console.
+                foreach (string port in ports)
+                {
+                    Console.WriteLine(port);
+                }
+
         }
 
         public static void getValues()
@@ -32,7 +90,7 @@ namespace ConsoleApp1
             int arduinoHumidty  = getArduinoHumidity();
             float sunlight      = getSunlight();
             Console.WriteLine(primaryTemp + secondaryTemp + arduinoTemp + arduinoHumidty + primaryHumidity + sunlight);
-            writeToDatabase(primaryTemp, secondaryTemp, arduinoTemp, arduinoHumidty, primaryHumidity, sunlight);
+            writeToDatabase(Program.credentials,primaryTemp, secondaryTemp, arduinoTemp, arduinoHumidty, primaryHumidity, sunlight);
         }
 
         public static float getPrimaryTemp()
@@ -45,7 +103,7 @@ namespace ConsoleApp1
             string a = _serialPort.ReadExisting();
             if (a == "")
             {
-                    Console.WriteLine("get-primay-temp failed, try #" + i);
+                    Console.WriteLine("get-primary-temp failed, try #" + i);
                 }
             if (a != "")
                     {
@@ -169,22 +227,22 @@ namespace ConsoleApp1
         }
 
 
-        public static void writeToDatabase(float primaryTemp, float secondaryTemp, float arduinoTemp, int arduinoHumidity, int primaryHumidity, float sunlight)
+        public static void writeToDatabase(string[] credentials, float primaryTemp, float secondaryTemp, float arduinoTemp, int arduinoHumidity, int primaryHumidity, float sunlight)
             
         {
             SqlCommand loadNewDataCommand;
             SqlDataAdapter adapter = new SqlDataAdapter();
             String SQL = "Insert into sensor_readings (sunlight, primarytemp, primaryhumidity, arduinohumidity, secondarytemp, arduinotemp)";
-            SQL += "VALUES ("+sunlight+","+primaryTemp+","+ primaryHumidity +","+ arduinoHumidity + ","+ secondaryTemp + ","+arduinoTemp+")";
+                                      SQL += "VALUES ("+sunlight+","+primaryTemp+","+ primaryHumidity +","+ arduinoHumidity + ","+ secondaryTemp + ","+arduinoTemp+")";
 
 
             String connetionString;
             SqlConnection cnn;
-            connetionString = @"Server=SERVERNAME;Database=DATABASENAME;User Id=ACCOUNTNAME;Password=PASSWORD;Integrated Security=False";
+            connetionString = "Server="+ credentials[0] + ";User Id="+ credentials[1] + ";Password="+ credentials[2] + ";Integrated Security=False";
             Console.WriteLine("attempting connection to DB");
             cnn = new SqlConnection(connetionString);
-            cnn.Open();
-            Console.WriteLine("Connection Open  !");
+           cnn.Open();
+            Console.WriteLine("Connection Open!");
             //to do add anexception handler
             loadNewDataCommand = new SqlCommand(SQL, cnn);
             adapter.InsertCommand = new SqlCommand(SQL, cnn);
@@ -192,7 +250,7 @@ namespace ConsoleApp1
 
 
             cnn.Close();
-
+            Console.WriteLine("Connection closed!");
 
         }
 
