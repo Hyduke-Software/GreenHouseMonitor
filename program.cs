@@ -2,6 +2,8 @@ using System;
 using System.IO.Ports;
 using System.Threading;
 using System.Data.SqlClient;
+using System.Linq;
+
 namespace ConsoleApp1
 {
     class Program
@@ -14,17 +16,20 @@ namespace ConsoleApp1
 
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("Hyduke Sensor Reader 2000"); 
-            Console.WriteLine("BaudRate should be set to 9600");
+            Console.WriteLine("Hyduke Sensor Reader 2000");
+            Configuration.getConfig(); //calls getConfig() to get config from sensorConfig.txt 
             Console.ForegroundColor = ConsoleColor.White;
             credentials = getCreds(); //loads credentials
+           // credentials = new string[3] { "", "", "" };
 
-
-    _serialPort = new SerialPort();
+            _serialPort = new SerialPort();
             listPorts();
-            Console.WriteLine("Enter COMport name");
-            _serialPort.PortName = Console.ReadLine();
-            _serialPort.BaudRate = 9600;
+            //  Console.WriteLine("Enter COMport name");
+            Console.WriteLine($"{Configuration.configValues.ElementAt(1).Value}PortName");
+            Console.WriteLine($"{Configuration.configValues.ElementAt(0).Value}PortNumb");
+                Console.ReadLine();
+            _serialPort.PortName = Configuration.configValues.ElementAt(1).Value;
+            _serialPort.BaudRate = Int32.Parse((Configuration.configValues.ElementAt(0).Value));
             try
             {
                 _serialPort.Open();
@@ -33,13 +38,15 @@ namespace ConsoleApp1
                    getValues();
 
 //                    writeToDatabase(credentials, 69, 69, 60, 25, 26, 420); //test values if needed 12/05/20
-                    Thread.Sleep(3600000);
+
+
+                    Thread.Sleep(3600000); //todo  take hour value from config file
                 }
             }
             catch (System.IO.IOException)
             {
                 Console.WriteLine("Error 1: COM port not found, check Device Manager");
-                Main();
+               // Main();
 
 
             }
@@ -50,16 +57,18 @@ namespace ConsoleApp1
         {
             ///ideally this would be a service account running the exe which would use AD authentication
                string[] credential;
-            credential = new string[3] {"","",""};
+            credential = new string[3] {"","",""}; //Servername, username, password
     //
-            Console.WriteLine("Enter server name");
-            credential[0] = Console.ReadLine();   //server
-            Console.WriteLine("Enter user name");
-            credential[1] = Console.ReadLine();   //username
-            Console.WriteLine("Enter password");
-            credential[2] = Console.ReadLine();   //password
+            Console.WriteLine($"Server loaded:{Configuration.configValues.ElementAt(2).Value}");
+            credential[0] = Configuration.configValues.ElementAt(2).Value;
+            Console.WriteLine($"Loaded username:{Configuration.configValues.ElementAt(2).Value}");
+            credential[1] = Configuration.configValues.ElementAt(3).Value;
+            Console.WriteLine("Loaded password: *********");
+            credential[2] = Configuration.configValues.ElementAt(4).Value;
 
             return credential;
+
+
 
         }
 
@@ -77,6 +86,8 @@ namespace ConsoleApp1
                 {
                     Console.WriteLine(port);
                 }
+            
+
 
         }
 
@@ -238,6 +249,7 @@ namespace ConsoleApp1
 
             String connetionString;
             SqlConnection cnn;
+            // connetionString = @"Server=vm-hv1-sql1;Database=Greenhouse;User Id=SQL-SQL-UPDATER;Password=Dysondog123;Integrated Security=False"; hardcoded server values is not good 12/05/20
             connetionString = "Server="+ credentials[0] + ";User Id="+ credentials[1] + ";Password="+ credentials[2] + ";Integrated Security=False";
             Console.WriteLine("attempting connection to DB");
             cnn = new SqlConnection(connetionString);
