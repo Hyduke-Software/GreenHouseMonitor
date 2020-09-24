@@ -13,7 +13,7 @@ namespace ConsoleApp1
         public static string rootFolder = @"C:\Temp\";
         //Default file. MAKE SURE TO CHANGE THIS LOCATION AND FILE PATH TO YOUR FILE   
         static public string textFile = @"C:\Temp\sensorConfig.txt";
-        public static Dictionary<string, bool> configValuesType = new Dictionary<string, bool>(); //janky method of marking the expected value as int or char. TRUE = INT, FALSE =CHAR
+        public static Dictionary<string, bool> configValuesType = new Dictionary<string, bool>(); //method of marking the expected value as int or char. TRUE = INT, FALSE =CHAR
         public static Dictionary<string, string> configValues = new Dictionary<string, string>();
 
 
@@ -105,19 +105,7 @@ namespace ConsoleApp1
                 }
             }
 
-
-
-
         }
 
     }
-    }
-
-
-    /*
-     * 
-     *     
-
-    */
-                           
-                                      
+}
