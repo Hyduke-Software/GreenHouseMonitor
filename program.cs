@@ -1,3 +1,5 @@
+//This polls the serial port to find the values from the attached Arduino
+
 using System;
 using System.IO.Ports;
 using System.Threading;
