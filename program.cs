@@ -20,11 +20,10 @@ namespace ConsoleApp1
             Configuration.getConfig(); //calls getConfig() to get config from sensorConfig.txt 
             Console.ForegroundColor = ConsoleColor.White;
             credentials = getCreds(); //loads credentials
-           // credentials = new string[3] { "", "", "" };
 
             _serialPort = new SerialPort();
             listPorts();
-            //  Console.WriteLine("Enter COMport name");
+
             Console.WriteLine($"{Configuration.configValues.ElementAt(1).Value}PortName");
             Console.WriteLine($"{Configuration.configValues.ElementAt(0).Value}PortNumb");
                 Console.ReadLine();
@@ -37,8 +36,6 @@ namespace ConsoleApp1
                 {
                    getValues();
 
-//                    writeToDatabase(credentials, 69, 69, 60, 25, 26, 420); //test values if needed 12/05/20
-
 
                     Thread.Sleep(3600000); //todo  take hour value from config file
                 }
@@ -46,8 +43,6 @@ namespace ConsoleApp1
             catch (System.IO.IOException)
             {
                 Console.WriteLine("Error 1: COM port not found, check Device Manager");
-               // Main();
-
 
             }
 
@@ -243,13 +238,14 @@ namespace ConsoleApp1
         {
             SqlCommand loadNewDataCommand;
             SqlDataAdapter adapter = new SqlDataAdapter();
+            //TODO: refactor into a more secure stored procedure
             String SQL = "Insert into sensor_readings (sunlight, primarytemp, primaryhumidity, arduinohumidity, secondarytemp, arduinotemp)";
                                       SQL += "VALUES ("+sunlight+","+primaryTemp+","+ primaryHumidity +","+ arduinoHumidity + ","+ secondaryTemp + ","+arduinoTemp+")";
 
 
             String connetionString;
             SqlConnection cnn;
-            // connetionString = @"Server=vm-hv1-sql1;Database=Greenhouse;User Id=SQL-SQL-UPDATER;Password=Dysondog123;Integrated Security=False"; hardcoded server values is not good 12/05/20
+            
             connetionString = "Server="+ credentials[0] + ";User Id="+ credentials[1] + ";Password="+ credentials[2] + ";Integrated Security=False";
             Console.WriteLine("attempting connection to DB");
             cnn = new SqlConnection(connetionString);
